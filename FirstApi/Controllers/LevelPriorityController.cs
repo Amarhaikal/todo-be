@@ -28,7 +28,7 @@ namespace FirstApi.Controllers
                     var notFoundResponse = new ApiResponse<List<LevelPriority>>
                     {
                         Status = 200,
-                        Message = "No level priorities",
+                        Message = "No Data",
                         Data = levelPriorities
                     };
                     return NotFound(notFoundResponse);
@@ -36,7 +36,7 @@ namespace FirstApi.Controllers
                 var response = new ApiResponse<List<LevelPriority>>
                 {
                     Status = 200,
-                    Message = "Level priorities retrieved successfully",
+                    Message = "Data retrieved successfully",
                     Data = levelPriorities
                 };
                 return Ok(response);

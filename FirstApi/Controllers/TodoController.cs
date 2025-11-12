@@ -9,7 +9,7 @@ namespace FirstApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TodoController : ControllerBase
+    public class TodoController : BaseApiController
     {
         private readonly FirstApiContext _context;
         private readonly IMapper _mapper;
@@ -31,36 +31,17 @@ namespace FirstApi.Controllers
 
                 if (todos == null)
                 {
-                    var notFoundResponse = new ApiResponse<List<Todo>>
-                    {
-                        Status = 200,
-                        Message = "No Data",
-                        Data = todos
-                    };
-                    return NotFound(notFoundResponse);
+                    return GetListNotFoundResponse();
                 }
 
                 var newTodo = _mapper.Map<List<TodoDto>>(todos);
 
-                var response = new ApiResponse<List<TodoDto>>
-                {
-                    Status = 200,
-                    Message = "Data retrieved successfully",
-                    Data = newTodo
-                };
-                return Ok(response);
-
+                return GetListSuccessResponse(newTodo);
 
             }
             catch (Exception ex)
             {
-                var errorResponse = new ApiResponse<List<Todo>>
-                {
-                    Status = 500,
-                    Message = $"An error occurred: {ex.Message}",
-                    Data = null
-                };
-                return StatusCode(500, errorResponse);
+                return ExceptionResponse(ex.Message);
             }
         }
 
@@ -76,33 +57,15 @@ namespace FirstApi.Controllers
 
                 if (todo == null)
                 {
-                    var notFoundResponse = new ApiResponse<Todo>
-                    {
-                        Status = 200,
-                        Message = "No Data",
-                        Data = null
-                    };
-                    return NotFound(notFoundResponse);
+                    return GetDetailsNotFoundResponse();
                 }
 
                 var newTodo = _mapper.Map<TodoDto>(todo);
-                var response = new ApiResponse<TodoDto>
-                {
-                    Status = 200,
-                    Message = "Data retrieved",
-                    Data = newTodo
-                };
-                return Ok(response);
+                return GetDetailsSuccessResponse(newTodo);
             }
             catch (Exception ex)
             {
-                var errorResponse = new ApiResponse<Todo>
-                {
-                    Status = 500,
-                    Message = $"An error occurred: {ex.Message}",
-                    Data = null
-                };
-                return StatusCode(500, errorResponse);
+                return ExceptionResponse(ex.Message);
             }
         }
 
@@ -114,13 +77,7 @@ namespace FirstApi.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    var invalidResponse = new ApiResponse<List<Todo>>
-                    {
-                        Status = 500,
-                        Message = $"Invalid Request",
-                        Data = null
-                    };
-                    return StatusCode(500, invalidResponse);
+                    return InvalidDataToSaveResponse();
                 }
 
                 _context.Todos.Add(todo);
@@ -130,6 +87,11 @@ namespace FirstApi.Controllers
                 var savedTodo = await _context.Todos
                     .Include(t => t.LevelPriority)
                     .FirstOrDefaultAsync(t => t.Id == todo.Id);
+
+                if (savedTodo == null)
+                {
+                    return CreateFailedResponse();
+                }
 
                 var todoDto = new TodoDto
                 {
@@ -144,24 +106,62 @@ namespace FirstApi.Controllers
                     } : null
                 };
 
-                var response = new ApiResponse<TodoDto>
-                {
-                    Status = 201,
-                    Message = $"Save successfully",
-                    Data = todoDto
-                };
-                return CreatedAtAction(nameof(GetTodo), new { id = todo.Id }, response);
-
+                return CreateSuccessResponse(todoDto, nameof(GetTodo), new { id = savedTodo });
             }
             catch (Exception ex)
             {
-                var errorResponse = new ApiResponse<List<Todo>>
+                return ExceptionResponse(ex.Message);
+            }
+        }
+
+        //PUT
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTodo(Todo todo, int id)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
                 {
-                    Status = 500,
-                    Message = $"An error occurred: {ex.Message}",
-                    Data = null
-                };
-                return StatusCode(500, errorResponse);
+                    return InvalidDataToSaveResponse();
+                }
+
+                if (todo.Id != id)
+                {
+                    var IdNotMatchResponse = new ApiResponse<Todo>
+                    {
+                        Status = 500,
+                        Message = "ID not match",
+                        Data = null
+                    };
+                }
+
+                var todoExist = await _context.Todos.FindAsync(id);
+                if (todoExist == null)
+                {
+                    var noExistResponse = new ApiResponse<Todo>
+                    {
+                        Status = 500,
+                        Message = $"Todo {id} not found",
+                        Data = null
+                    };
+                    return NotFound(noExistResponse);
+                }
+
+                todoExist.Task = todo.Task;
+                todoExist.IsCompleted  = todo.IsCompleted ;
+                todoExist.LevelPriorityId  = todo.LevelPriorityId ;
+
+                _context.Todos.Update(todoExist);
+                await _context.SaveChangesAsync();
+
+                var updatedTodo = await _context.Todos.Include(t => t.LevelPriority).FirstOrDefaultAsync(t => t.Id == id);
+                var todoDto = _mapper.Map<TodoDto>(updatedTodo);
+
+                return UpdateSuccessResponse(todoDto);
+            }
+            catch (Exception ex)
+            {
+                return ExceptionResponse(ex.Message);
             }
         }
     }

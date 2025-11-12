@@ -66,7 +66,7 @@ namespace FirstApi.Controllers
                     var notFoundResponse = new ApiResponse<List<LevelPriority>>
                     {
                         Status = 200,
-                        Message = $"Level Priority {id} Not Found",
+                        Message = $"Data Not Found",
                         Data = null
                     };
                     return NotFound(notFoundResponse);
@@ -74,10 +74,10 @@ namespace FirstApi.Controllers
                 var response = new ApiResponse<LevelPriority>
                 {
                     Status = 200,
-                    Message = $"Level Priority {id} Found",
+                    Message = "Data retrieved successfully",
                     Data = levelPriorities
                 };
-                return NotFound(response);
+                return Ok(response);
 
             }
             catch (Exception ex)
@@ -104,7 +104,7 @@ namespace FirstApi.Controllers
                     var badRequestResponse = new ApiResponse<LevelPriority>
                     {
                         Status = 400,
-                        Message = "Invalid data provided",
+                        Message = "Invalid request",
                         Data = null
                     };
                     return BadRequest(badRequestResponse);
@@ -129,7 +129,7 @@ namespace FirstApi.Controllers
                 var response = new ApiResponse<LevelPriority>
                 {
                     Status = 201,
-                    Message = "Level priority created successfully",
+                    Message = "Data created successfully",
                     Data = levelPriority
                 };
 
